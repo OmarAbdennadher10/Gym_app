@@ -7,7 +7,7 @@
  */
 async function callLlm({ system, prompt }) {
   const baseUrl = process.env.LLM_BASE_URL || 'https://api.groq.com/openai/v1';
-  const model = process.env.LLM_MODEL || "llama-3.3-70b-versatile";
+  const model = process.env.LLM_MODEL || "openai/gpt-oss-120b";
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
