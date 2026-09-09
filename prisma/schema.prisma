@@ -1,0 +1,123 @@
+// Database: Supabase-hosted Postgres. Two URLs are used —
+// DATABASE_URL is the pooled connection (port 6543) that the running app
+// uses for normal queries; DIRECT_URL is the direct connection (port 5432)
+// that Prisma needs for migrations, since migrations require a session-mode
+// connection that the transaction pooler doesn't support.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  profiles UserProfile[]
+  plans    GeneratedPlan[]
+  sessions WorkoutSession[]
+  groceries GroceryItem[]
+}
+
+model UserProfile {
+  id                   String   @id @default(uuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  gender               String
+  age                  Int
+  heightCm             Float
+  weightKg             Float
+  goal                 String
+  activityLevel        String
+  experienceLevel      String
+  equipment            String
+  daysPerWeek          Int
+  dietaryRestrictions  String   // JSON-encoded string array
+  injuriesOrLimitations String  // JSON-encoded string array
+  targetWeightKg       Float?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  plans                GeneratedPlan[]
+
+  @@index([userId])
+}
+
+model GeneratedPlan {
+  id             String      @id @default(uuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId      String
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  splitName      String
+  workoutPlanJson String     // JSON blob: { days: [...] }
+  mealPlanJson    String     // JSON blob: { meals: [...] }
+  coachNotes      String
+  calories        Int
+  proteinG        Int
+  carbG           Int
+  fatG            Int
+
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+
+  @@index([userId])
+  @@index([profileId])
+}
+
+model WeightLog {
+  id        String   @id @default(uuid())
+  userId    String
+  weightKg  Float
+  loggedAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// A single completed (or in-progress) real-world gym session, logged
+/// against a specific day of the active plan. Stores actual weights/reps
+/// performed per set — this is the "history" data, distinct from the
+/// prescribed plan itself.
+model WorkoutSession {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planId          String   // GeneratedPlan.id this session was based on (not a hard FK — plans can be deactivated/history stays valid)
+  dayLabel        String   // e.g. "Day 1"
+  focus           String   // e.g. "Push"
+  startedAt       DateTime @default(now())
+  durationSeconds Int?     // null while in progress, set on completion
+  exerciseLogsJson String  // JSON: [{ name, sets: [{ weightKg, reps, completed }] }]
+  notes           String   @default("")
+  completed       Boolean  @default(false)
+
+  @@index([userId])
+}
+
+/// A grocery/shopping list item. Items can be auto-generated from the
+/// active meal plan's ingredients or added manually by the user.
+model GroceryItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  quantity  String   @default("")
+  category  String   @default("Other") // Produce, Protein, Dairy, Pantry, Other...
+  checked   Boolean  @default(false)
+  source    String   @default("manual") // "manual" | "meal-plan"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
