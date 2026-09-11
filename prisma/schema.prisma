@@ -24,6 +24,7 @@ model User {
   plans    GeneratedPlan[]
   sessions WorkoutSession[]
   groceries GroceryItem[]
+  excludedIngredients ExcludedIngredient[]
 }
 
 model UserProfile {
@@ -117,6 +118,20 @@ model GroceryItem {
   category  String   @default("Other") // Produce, Protein, Dairy, Pantry, Other...
   checked   Boolean  @default(false)
   source    String   @default("manual") // "manual" | "meal-plan"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// An ingredient the user never wants included in generated meal plans
+/// (allergy, dislike, ethical restriction, etc). Persists independently of
+/// any single plan/profile — applied to every future generation.
+model ExcludedIngredient {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
   createdAt DateTime @default(now())
 
   @@index([userId])

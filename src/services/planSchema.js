@@ -1,38 +1,18 @@
 const { z } = require('zod');
 
-const exerciseSchema = z.object({
-  name: z.string().min(1),
-  sets: z.number().int().positive(),
-  reps: z.union([z.string(), z.number()]).transform(String),
-  restSeconds: z.number().int().nonnegative(),
-  notes: z.string().optional().default(''),
+const profileInputSchema = z.object({
+  gender: z.enum(['male', 'female', 'other']),
+  age: z.number().int().min(13).max(100),
+  heightCm: z.number().min(100).max(250),
+  weightKg: z.number().min(30).max(300),
+  goal: z.enum(['loseFat', 'buildMuscle', 'recomposition', 'maintainFitness', 'improveEndurance']),
+  activityLevel: z.enum(['sedentary', 'light', 'moderate', 'active', 'veryActive']),
+  experienceLevel: z.enum(['beginner', 'intermediate', 'advanced']),
+  equipment: z.enum(['fullGym', 'homeBasic', 'bodyweightOnly', 'dumbbellsOnly']),
+  daysPerWeek: z.number().int().min(1).max(7),
+  dietaryRestrictions: z.array(z.string()).optional().default([]),
+  injuriesOrLimitations: z.array(z.string()).optional().default([]),
+  targetWeightKg: z.number().optional(),
 });
 
-const workoutDaySchema = z.object({
-  dayLabel: z.string().min(1),
-  focus: z.string().min(1),
-  exercises: z.array(exerciseSchema).min(1),
-});
-
-const mealSchema = z.object({
-  name: z.string().min(1),
-  timeSuggestion: z.string().optional().default(''),
-  items: z.array(z.string()).min(1),
-  calories: z.number().int().nonnegative(),
-  proteinG: z.number().int().nonnegative(),
-  carbG: z.number().int().nonnegative(),
-  fatG: z.number().int().nonnegative(),
-});
-
-const generatedPlanSchema = z.object({
-  workoutPlan: z.object({
-    splitName: z.string().min(1),
-    days: z.array(workoutDaySchema).min(1),
-  }),
-  mealPlan: z.object({
-    meals: z.array(mealSchema).min(1),
-  }),
-  coachNotes: z.string().optional().default(''),
-});
-
-module.exports = { generatedPlanSchema };
+module.exports = { profileInputSchema };
